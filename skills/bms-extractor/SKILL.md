@@ -131,9 +131,9 @@ Use Navigate, Take screenshot, Read page, Click, and Execute JavaScript to explo
 
 ## Step 5: EXTRACT — Walk Levels, Equipment, and Zones
 
-Extraction happens in two passes: first extract levels and equipment, then derive zones.
+Extraction has three parts: extract equipment, resolve zone names, then walk all levels.
 
-### Pass 1: Levels and Equipment
+### Part A: Extract Equipment per Level
 
 For each level in scope:
 1. **Navigate** to the level's HVAC floor plan / graphics page
@@ -149,21 +149,58 @@ For each level in scope:
    - Other HVAC equipment labels on the graphic
 5. Record each equipment item with its name, type, and level
 
-### Pass 2: Derive Zones
+**Important:** Equipment names are NOT zone names. A VAV named `VAV_L8_NE_1` is a piece of equipment that *serves* a zone — the zone name needs to be resolved separately.
 
-After extracting equipment, determine zone names using this priority:
+### Part B: Resolve Zone Names
 
-1. **Explicit zone names on graphics** (best case) — some floor plans label zones directly (e.g. room names, area names next to equipment). If the graphic shows VAVs with associated room/zone labels, use those.
+After extracting equipment from a few sample levels, determine zone names using this three-step strategy:
 
-2. **Equipment naming convention** (common case) — when zone names aren't explicitly shown, the equipment names themselves often encode zone info. Decode the naming pattern, e.g.:
-   - `VAV-L03-INT1` → Level 3, Internal Zone 1
-   - `VAV-L03-NE` → Level 3, North East perimeter
-   - `VAV-L03-SW` → Level 3, South West perimeter
-   - `FCU-L02-BOARDROOM` → Level 2, Boardroom
+#### Step B1: Sample BMS zone descriptions
 
-   Ask the user to confirm the naming convention if it's ambiguous.
+Visit the **overview/detail page** for 3–5 VAVs across different levels and extract the zone description field. Many BMS platforms store a descriptive zone name on each equipment point (e.g. in Niagara, it's typically line 2 below the equipment name).
 
-3. **Zone summary pages** (fallback) — some BMS platforms have zone summary tables, but these often show tenancy names rather than HVAC zones. Use as a supplement, not primary source.
+Use Execute JavaScript with a TreeWalker to extract text near equipment labels:
+```javascript
+// Walk text nodes to find zone descriptions near VAV labels
+const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+const results = [];
+while (walker.nextNode()) {
+  const text = walker.currentNode.textContent.trim();
+  if (text) results.push(text);
+}
+results;
+```
+
+#### Step B2: Check if descriptions are meaningful
+
+Evaluate the sampled descriptions:
+- **If descriptions are unique and descriptive** (e.g. "Board Room", "North East Open Plan", "Server Room") → use them as zone names. Proceed to extract all equipment with their descriptions.
+- **If descriptions are all identical or generic** (e.g. every VAV says "North-West Centre Zone Workspace Area") → the description field is unreliable. Fall back to Step B3.
+
+#### Step B3: Derive zones from equipment naming convention
+
+When BMS descriptions are unreliable, use the equipment naming convention. Equipment names typically follow the pattern: `VAV_{Level}_{ZoneID}_{Sequence}`
+
+Multiple equipment with the same zone ID serve the **same zone** — group them, don't count separately. For example, `VAV_L8_NE_1` and `VAV_L8_NE_2` both serve the "North East Perimeter" zone on Level 8.
+
+Common zone ID patterns:
+| Zone ID | Zone Name |
+|---------|-----------|
+| INT1, INT2, INT3 | Internal Zone 1, 2, 3 |
+| NE, SE, SW, NW | Directional perimeter zones |
+| N, S, E, W | Cardinal perimeter zones |
+| Named (e.g. BOARDROOM, SERVER) | Specific room/area |
+
+Ask the user to confirm the naming convention if it's ambiguous or doesn't match these patterns.
+
+### Part C: Walk All Levels
+
+Once the zone resolution strategy is determined, apply it to all levels in scope. For each level:
+1. Navigate to the HVAC floor plan
+2. Extract all equipment names
+3. Resolve zone names using the strategy from Part B
+4. Save page source
+5. Report progress
 
 ### Saving page source
 
@@ -187,31 +224,38 @@ Maintain a running JSON structure:
   "site": "99 Elizabeth St",
   "bms_platform": "detected platform",
   "extracted_at": "2026-03-16T14:30:00+11:00",
+  "zone_name_source": "vav_naming_convention",
+  "zone_name_source_note": "BMS descriptions were identical across all sampled VAVs",
   "levels": [
     {
-      "name": "Level 3",
-      "page_source": "pages/level-3.html",
+      "name": "Level 8",
+      "page_source": "pages/level-8.html",
       "equipment": [
-        { "name": "VAV-L03-INT1", "type": "VAV" },
-        { "name": "VAV-L03-NE", "type": "VAV" },
-        { "name": "VAV-L03-SW", "type": "VAV" },
-        { "name": "FCU-L03-SERVER", "type": "FCU" }
+        { "name": "VAV_L8_INT1_1", "type": "VAV" },
+        { "name": "VAV_L8_INT1_2", "type": "VAV" },
+        { "name": "VAV_L8_NE_1", "type": "VAV" },
+        { "name": "VAV_L8_NE_2", "type": "VAV" },
+        { "name": "FCU_L8_SERVER", "type": "FCU" }
       ],
       "zones": [
-        { "name": "Internal Zone 1", "equipment": ["VAV-L03-INT1"] },
-        { "name": "North East Perimeter", "equipment": ["VAV-L03-NE"] },
-        { "name": "South West Perimeter", "equipment": ["VAV-L03-SW"] },
-        { "name": "Server Room", "equipment": ["FCU-L03-SERVER"] }
+        { "name": "Internal Zone 1", "equipment": ["VAV_L8_INT1_1", "VAV_L8_INT1_2"] },
+        { "name": "North East Perimeter", "equipment": ["VAV_L8_NE_1", "VAV_L8_NE_2"] },
+        { "name": "Server Room", "equipment": ["FCU_L8_SERVER"] }
       ]
     }
   ]
 }
 ```
 
+The `zone_name_source` field records which resolution method was used:
+- `"bms_description"` — zone names from BMS equipment description fields
+- `"vav_naming_convention"` — zone names derived from equipment naming pattern
+- `"manual"` — user provided zone names manually
+
 ### Progress reporting
 
 After each level, report progress:
-> "Extracted Level 3: found 4 VAVs, 1 FCU → derived 4 zones (Internal Zone 1, NE Perimeter, SW Perimeter, Server Room). Moving to Level 4..."
+> "Extracted Level 8: found 4 VAVs, 1 FCU → 3 zones (Internal Zone 1, NE Perimeter, Server Room). Moving to Level 9..."
 
 ---
 
