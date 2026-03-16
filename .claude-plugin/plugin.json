@@ -1,0 +1,8 @@
+{
+  "name": "bms-extractor",
+  "version": "0.1.0",
+  "description": "Extract building hierarchy data from BMS web interfaces for Peak platform onboarding",
+  "author": {
+    "name": "David Waterworth"
+  }
+}
