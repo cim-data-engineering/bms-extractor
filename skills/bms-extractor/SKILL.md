@@ -129,43 +129,54 @@ Use Navigate, Take screenshot, Read page, Click, and Execute JavaScript to explo
 
 ---
 
-## Step 5: EXTRACT — Walk Levels and Zones
+## Step 5: EXTRACT — Walk Levels, Equipment, and Zones
 
-For each level found:
-1. **Navigate** to the level page URL
-2. **Take a screenshot** and save to `${OUTPUT_DIR}/screenshots/level-<slug>.png`
-3. **Save page source** via Execute JavaScript and save to `${OUTPUT_DIR}/pages/level-<slug>.html`:
+Extraction happens in two passes: first extract levels and equipment, then derive zones.
+
+### Pass 1: Levels and Equipment
+
+For each level in scope:
+1. **Navigate** to the level's HVAC floor plan / graphics page
+2. **Take a screenshot** to visually inspect the layout
+3. **Save page source** via Execute JavaScript and write to `${OUTPUT_DIR}/pages/level-<slug>.html`:
    ```javascript
    document.documentElement.outerHTML
    ```
-4. **Read the page** or **Execute JavaScript** to extract zone names
-5. **Click** sub-navigation to explore zones if needed
+4. **Extract equipment names and types** from the page — look for:
+   - VAVs (Variable Air Volume boxes)
+   - FCUs (Fan Coil Units)
+   - AHUs (Air Handling Units)
+   - Other HVAC equipment labels on the graphic
+5. Record each equipment item with its name, type, and level
 
-For each zone found:
-1. **Navigate** to the zone page (if it has its own page/graphic)
-2. **Take a screenshot** and save to `${OUTPUT_DIR}/screenshots/level-<slug>-zone-<slug>.png`
-3. **Save page source** to `${OUTPUT_DIR}/pages/level-<slug>-zone-<slug>.html`
+### Pass 2: Derive Zones
+
+After extracting equipment, determine zone names using this priority:
+
+1. **Explicit zone names on graphics** (best case) — some floor plans label zones directly (e.g. room names, area names next to equipment). If the graphic shows VAVs with associated room/zone labels, use those.
+
+2. **Equipment naming convention** (common case) — when zone names aren't explicitly shown, the equipment names themselves often encode zone info. Decode the naming pattern, e.g.:
+   - `VAV-L03-INT1` → Level 3, Internal Zone 1
+   - `VAV-L03-NE` → Level 3, North East perimeter
+   - `VAV-L03-SW` → Level 3, South West perimeter
+   - `FCU-L02-BOARDROOM` → Level 2, Boardroom
+
+   Ask the user to confirm the naming convention if it's ambiguous.
+
+3. **Zone summary pages** (fallback) — some BMS platforms have zone summary tables, but these often show tenancy names rather than HVAC zones. Use as a supplement, not primary source.
 
 ### Saving page source
 
-For every graphics page visited during extraction, **always save the page source**:
-- **Page source** (HTML) — preserves the full DOM for later analysis, point extraction, or re-processing. Extract via Execute JavaScript (`document.documentElement.outerHTML`) and write to file.
+For every graphics page visited, **always save the page source**:
+- **Page source** (HTML) — preserves the full DOM for later analysis, point extraction, or re-processing
 
 ```bash
-# Save page source captured via Execute JavaScript
 cat > "${OUTPUT_DIR}/pages/level-1.html" << 'HTMLEOF'
 ... page source from Execute JavaScript ...
 HTMLEOF
 ```
 
 **Note on screenshots:** In CoWork, browser screenshots cannot be saved directly to the filesystem — the Chrome extension is sandboxed. Use Take screenshot to visually inspect pages during extraction, but rely on saved page source (HTML) as the persistent artifact. If screenshots are needed as files, tell the user to save them manually from the open Chrome tabs.
-
-### Identifying zones
-
-Zones are often **equipment names** visible on floor plan graphics (VAVs, FCUs, AHUs) rather than room/tenancy names. When walking each level:
-- Screenshot the floor plan graphic — equipment labels on the plan are the zone names
-- Check for sub-navigation (child nodes, tabs) listing zones
-- Zone summary pages (if they exist) may show tenancy names but miss equipment zones — always check the floor plan too
 
 ### Build the structure as you go
 
@@ -178,12 +189,19 @@ Maintain a running JSON structure:
   "extracted_at": "2026-03-16T14:30:00+11:00",
   "levels": [
     {
-      "name": "Level 1",
-      "screenshot": "screenshots/level-1.png",
-      "page_source": "pages/level-1.html",
+      "name": "Level 3",
+      "page_source": "pages/level-3.html",
+      "equipment": [
+        { "name": "VAV-L03-INT1", "type": "VAV" },
+        { "name": "VAV-L03-NE", "type": "VAV" },
+        { "name": "VAV-L03-SW", "type": "VAV" },
+        { "name": "FCU-L03-SERVER", "type": "FCU" }
+      ],
       "zones": [
-        { "name": "Zone A", "screenshot": "screenshots/level-1-zone-a.png" },
-        { "name": "Zone B", "screenshot": "screenshots/level-1-zone-b.png" }
+        { "name": "Internal Zone 1", "equipment": ["VAV-L03-INT1"] },
+        { "name": "North East Perimeter", "equipment": ["VAV-L03-NE"] },
+        { "name": "South West Perimeter", "equipment": ["VAV-L03-SW"] },
+        { "name": "Server Room", "equipment": ["FCU-L03-SERVER"] }
       ]
     }
   ]
@@ -193,7 +211,7 @@ Maintain a running JSON structure:
 ### Progress reporting
 
 After each level, report progress:
-> "Extracted Level 3: found 4 zones (Lobby, North Wing, South Wing, Plant Room). Moving to Level 4..."
+> "Extracted Level 3: found 4 VAVs, 1 FCU → derived 4 zones (Internal Zone 1, NE Perimeter, SW Perimeter, Server Room). Moving to Level 4..."
 
 ---
 
@@ -205,13 +223,16 @@ Write the complete JSON structure built during extraction.
 
 ### 6b. `levels_and_zones.csv`
 
-Generate the CSV from the JSON — two columns: `level` and `zones`.
+Generate the CSV from the JSON — columns: `level`, `zone`, `equipment_type`, `equipment_names`.
 
 ```bash
 jq -r '
-  ["level", "zones"],
-  (.levels[] | [.name, ([.zones[].name] | join(", "))])
-  | @csv
+  ["level", "zone", "equipment_type", "equipment_names"],
+  (.levels[] as $l | $l.zones[] |
+    [$l.name, .name,
+     ([.equipment[] as $e | ($l.equipment[] | select(.name == $e) | .type)] | unique | join("/")),
+     (.equipment | join(", "))]
+  ) | @csv
 ' "${OUTPUT_DIR}/site_model.json" > "${OUTPUT_DIR}/levels_and_zones.csv"
 ```
 
