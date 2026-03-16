@@ -4,17 +4,18 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-BMS Extractor is a Claude Code skill for extracting HVAC building hierarchy data (levels, equipment, and zones) from BMS (Building Management System) web interfaces. It uses built-in browser tools (Navigate, Click, Take screenshot, Read page, Execute JavaScript) for browser automation.
+BMS Extractor is a Claude Code skill for extracting building hierarchy data (levels, zones, and all equipment) from BMS (Building Management System) web interfaces. It uses built-in browser tools (Navigate, Click, Read page, Execute JavaScript) for browser automation.
 
-The primary use case is commissioning new sites in the Peak platform — extracting the spatial hierarchy from the BMS as the first onboarding step.
+The primary use case is commissioning new sites in the Peak platform — extracting the spatial hierarchy and equipment inventory from the BMS as the first onboarding step.
 
 ## Skill Architecture
 
 ```
 skills/bms-extractor/
 ├── SKILL.md              # Skill definition
-└── references/           # Platform-specific BMS UI patterns (main branch only)
-    └── bms-ui-patterns.md
+└── references/           # Reference data (main branch only)
+    ├── bms-ui-patterns.md    # Platform-specific BMS UI patterns
+    └── equipment-types.md    # Master list of 77 equipment types for Peak
 ```
 
 ## How to Use
@@ -26,26 +27,26 @@ Run Claude Code and invoke the skill naturally:
 The skill will:
 1. Navigate to the BMS and check if already authenticated
 2. If login needed, prompt the user to log in via the Chrome browser tab
-3. Show available levels, ask user what to extract
-4. Extract HVAC equipment per level, then resolve zone names
-5. Output `site_model.json`, `levels_and_zones.csv`, and `manifest.json`
+3. Ask the user for URL guidance (floor plans, equipment summary pages)
+4. Two-pass extraction: floor plans (levels & zones), then full equipment list
+5. Output `{site_name}.xlsx` (3 tabs), `site_model.json`, and `manifest.json`
 
 ## Output
 
 ```
 bms-extract/<site-name>/
+├── {site_name}.xlsx          # Excel workbook with 3 tabs (levels_and_zones, equipment_list, equipment_types)
 ├── site_model.json           # Structured hierarchy with equipment + zones (JSON)
-├── levels_and_zones.csv      # Level + zone + equipment table for Peak import
 ├── manifest.json             # Extraction metadata
-└── pages/                    # Saved page source (HTML) per level
+└── pages/                    # Saved page source (HTML) per level/page
 ```
 
 ## Building Hierarchy Model
 
-- **Site** (building) > **Level** (floor) > **Zone** (space/area) > **Equipment** (VAV, FCU, etc.)
+- **Site** (building) > **Level** (floor) > **Zone** (space/area) > **Equipment** (VAV, FCU, AHU, Chiller, etc.)
 - Equipment serves zones — a VAV is not a zone, it serves one
-- Multiple equipment with the same zone ID serve the same zone (group them)
-- Zone names come from: BMS descriptions, equipment naming conventions, or manual input
+- Zone IDs are derived by stripping the equipment type prefix (e.g., `VAV_P1` → zone `P1`)
+- Every level auto-includes "Plantroom" and "All" as default zones
 - Levels can be physical floors or virtual spaces (e.g., "Plantroom", "Roof")
 - Basement level numbers are stored as positive numbers (B1=1, B2=2)
 
@@ -54,7 +55,7 @@ bms-extract/<site-name>/
 To build the uploadable `.skill` file for CoWork:
 
 ```bash
-cd skills/bms-extractor && zip -r ../../bms-extractor.skill SKILL.md && cd -
+cd skills/bms-extractor && zip -r ../../bms-extractor.skill SKILL.md references/ -x "references/final_output.xlsx" && cd -
 ```
 
 This creates `bms-extractor.skill` in the repo root. Upload it via CoWork → Customize → Skills → **+** button.

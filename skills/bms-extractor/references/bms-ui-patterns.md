@@ -71,7 +71,7 @@ Guidance for handling common BMS web interface layouts during extraction.
 
 ---
 
-## Allerton / Optergy (BACtalk)
+## Alerton / Optergy (BACtalk)
 
 **Login:** Form-based at root URL. Username + password fields.
 
