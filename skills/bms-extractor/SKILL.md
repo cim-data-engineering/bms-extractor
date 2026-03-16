@@ -1,11 +1,13 @@
 ---
 name: bms-extractor
-description: Extracts levels and zones from a BMS (Building Management System) web interface using built-in browser tools (Navigate, Click, Take screenshot, Read page, Execute JavaScript). Produces a TSV file for Peak platform import and a JSON site model with screenshots for verification. Triggers for "extract levels from BMS", "get zones from BMS", "map BMS levels and zones", "BMS site structure extraction", or "extract BMS hierarchy for Peak import".
+description: Extracts HVAC levels and zones from a BMS (Building Management System) web interface using built-in browser tools (Navigate, Click, Take screenshot, Read page, Execute JavaScript). Produces a CSV file for Peak platform import and a JSON site model with page source for verification. Triggers for "extract levels from BMS", "get zones from BMS", "map BMS levels and zones", "BMS site structure extraction", or "extract BMS hierarchy for Peak import".
 ---
 
 # BMS Extractor
 
-Extracts **levels and zones** from a BMS web interface using built-in browser tools, producing a TSV ready for Peak platform import and a JSON site model with screenshot evidence.
+Extracts **HVAC levels and zones** from a BMS web interface using built-in browser tools, producing a CSV ready for Peak platform import and a JSON site model with page source evidence.
+
+**Focus on HVAC only** — skip lighting, security, fire, vertical transport, and other non-HVAC systems.
 
 ---
 
@@ -17,7 +19,7 @@ Extracts **levels and zones** from a BMS web interface using built-in browser to
 3. SCOPE      → Show user what's available, ask what to extract
 4. DISCOVER   → Identify nav tree pattern for selected scope
 5. EXTRACT    → Walk levels and zones in the nav hierarchy, screenshot each
-6. OUTPUT     → Write site_model.json, levels_and_zones.tsv, manifest.json
+6. OUTPUT     → Write site_model.json, levels_and_zones.csv, manifest.json
 ```
 
 ---
@@ -29,7 +31,6 @@ Collect inputs and prepare the workspace.
 ```bash
 SITE_NAME="example-site"  # kebab-case site name from user
 OUTPUT_DIR="bms-extract/${SITE_NAME}"
-mkdir -p "${OUTPUT_DIR}/screenshots"
 mkdir -p "${OUTPUT_DIR}/pages"
 ```
 
@@ -94,7 +95,8 @@ After authentication, **do not start extracting immediately**. First discover th
 
 1. Take a screenshot of the dashboard/nav tree
 2. Identify the levels available (e.g. "I can see Roof, Levels 15–1, Ground, and B1 — 18 levels total")
-3. Ask the user:
+3. Identify HVAC-related navigation (Mechanical, HVAC, Floor Layouts, etc.) — ignore Lighting, Security, Fire, Vertical Transport
+4. Ask the user:
 
 > "What would you like to extract?"
 > - **All levels and zones** — full building hierarchy
@@ -144,11 +146,10 @@ For each zone found:
 2. **Take a screenshot** and save to `${OUTPUT_DIR}/screenshots/level-<slug>-zone-<slug>.png`
 3. **Save page source** to `${OUTPUT_DIR}/pages/level-<slug>-zone-<slug>.html`
 
-### Saving screenshots and page source
+### Saving page source
 
-For every graphics page visited during extraction, **always save both**:
-- **Screenshot** (PNG) — visual evidence, captures canvas/SVG graphics that aren't in the DOM text
-- **Page source** (HTML) — preserves the full DOM for later analysis, point extraction, or re-processing
+For every graphics page visited during extraction, **always save the page source**:
+- **Page source** (HTML) — preserves the full DOM for later analysis, point extraction, or re-processing. Extract via Execute JavaScript (`document.documentElement.outerHTML`) and write to file.
 
 ```bash
 # Save page source captured via Execute JavaScript
@@ -156,6 +157,8 @@ cat > "${OUTPUT_DIR}/pages/level-1.html" << 'HTMLEOF'
 ... page source from Execute JavaScript ...
 HTMLEOF
 ```
+
+**Note on screenshots:** In CoWork, browser screenshots cannot be saved directly to the filesystem — the Chrome extension is sandboxed. Use Take screenshot to visually inspect pages during extraction, but rely on saved page source (HTML) as the persistent artifact. If screenshots are needed as files, tell the user to save them manually from the open Chrome tabs.
 
 ### Identifying zones
 
@@ -196,23 +199,23 @@ After each level, report progress:
 
 ## Step 6: OUTPUT — Write Files
 
-### 5a. `site_model.json`
+### 6a. `site_model.json`
 
 Write the complete JSON structure built during extraction.
 
-### 5b. `levels_and_zones.tsv`
+### 6b. `levels_and_zones.csv`
 
-Generate the TSV from the JSON — two columns: `level` and `zones` (comma-separated zone list).
+Generate the CSV from the JSON — two columns: `level` and `zones`.
 
 ```bash
 jq -r '
   ["level", "zones"],
   (.levels[] | [.name, ([.zones[].name] | join(", "))])
-  | @tsv
-' "${OUTPUT_DIR}/site_model.json" > "${OUTPUT_DIR}/levels_and_zones.tsv"
+  | @csv
+' "${OUTPUT_DIR}/site_model.json" > "${OUTPUT_DIR}/levels_and_zones.csv"
 ```
 
-### 5c. `manifest.json`
+### 6c. `manifest.json`
 
 Write extraction metadata (source URL, site name, platform, timestamps, counts).
 
@@ -223,8 +226,7 @@ Report to the user:
 > - Levels: N
 > - Total zones: M
 > - Output: `bms-extract/<site-name>/`
-> - Files: `site_model.json`, `levels_and_zones.tsv`, `manifest.json`
-> - Screenshots: `screenshots/` (K files)
+> - Files: `site_model.json`, `levels_and_zones.csv`, `manifest.json`
 > - Page sources: `pages/` (M files)
 
 ---
