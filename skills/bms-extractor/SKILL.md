@@ -29,6 +29,7 @@ Collect inputs and prepare the workspace.
 SITE_NAME="example-site"  # kebab-case site name from user
 OUTPUT_DIR="bms-extract/${SITE_NAME}"
 mkdir -p "${OUTPUT_DIR}/screenshots"
+mkdir -p "${OUTPUT_DIR}/pages"
 ```
 
 Ask the user for:
@@ -64,6 +65,28 @@ Wait for the user to confirm, then take another screenshot to verify.
 
 ---
 
+## Browser Tab Setup
+
+**CRITICAL:** Before attempting screenshots or JavaScript execution on a BMS page, always ensure you have a working tab.
+
+### Correct sequence:
+1. Call `tabs_context_mcp(createIfEmpty: true)` to initialize the tab group
+2. Call `tabs_create_mcp` to create a **new, clean tab** — use this tab ID for all screenshot and interaction work
+3. Navigate to the BMS URL on the new tab
+4. Wait 5 seconds for the page to fully render
+5. Take screenshot — this should now work reliably
+
+### If screenshots fail on a tab:
+- Create another new tab with `tabs_create_mcp` and retry
+- The old tab can still be used for `read_page` and `navigate` (DOM-based tools), just not for screenshots or JavaScript execution
+
+### Use the working screenshot tab for:
+- Taking screenshots of each level/zone page
+- Capturing floor plan graphics for verification
+- Any page where content is rendered as canvas/graphics (not in the DOM)
+
+---
+
 ## Step 3: DISCOVER — Identify Navigation Structure
 
 Use Navigate, Take screenshot, Read page, Click, and Execute JavaScript to explore the BMS interface:
@@ -90,9 +113,31 @@ Use Navigate, Take screenshot, Read page, Click, and Execute JavaScript to explo
 
 For each level found:
 1. **Navigate** to the level page URL
-2. **Take a screenshot** and save it to the output directory
-3. **Read the page** or **Execute JavaScript** to extract zone names
-4. **Click** sub-navigation to explore zones if needed
+2. **Take a screenshot** and save to `${OUTPUT_DIR}/screenshots/level-<slug>.png`
+3. **Save page source** via Execute JavaScript and save to `${OUTPUT_DIR}/pages/level-<slug>.html`:
+   ```javascript
+   document.documentElement.outerHTML
+   ```
+4. **Read the page** or **Execute JavaScript** to extract zone names
+5. **Click** sub-navigation to explore zones if needed
+
+For each zone found:
+1. **Navigate** to the zone page (if it has its own page/graphic)
+2. **Take a screenshot** and save to `${OUTPUT_DIR}/screenshots/level-<slug>-zone-<slug>.png`
+3. **Save page source** to `${OUTPUT_DIR}/pages/level-<slug>-zone-<slug>.html`
+
+### Saving screenshots and page source
+
+For every graphics page visited during extraction, **always save both**:
+- **Screenshot** (PNG) — visual evidence, captures canvas/SVG graphics that aren't in the DOM text
+- **Page source** (HTML) — preserves the full DOM for later analysis, point extraction, or re-processing
+
+```bash
+# Save page source captured via Execute JavaScript
+cat > "${OUTPUT_DIR}/pages/level-1.html" << 'HTMLEOF'
+... page source from Execute JavaScript ...
+HTMLEOF
+```
 
 ### Identifying zones
 
@@ -114,6 +159,7 @@ Maintain a running JSON structure:
     {
       "name": "Level 1",
       "screenshot": "screenshots/level-1.png",
+      "page_source": "pages/level-1.html",
       "zones": [
         { "name": "Zone A", "screenshot": "screenshots/level-1-zone-a.png" },
         { "name": "Zone B", "screenshot": "screenshots/level-1-zone-b.png" }
@@ -161,6 +207,7 @@ Report to the user:
 > - Output: `bms-extract/<site-name>/`
 > - Files: `site_model.json`, `levels_and_zones.tsv`, `manifest.json`
 > - Screenshots: `screenshots/` (K files)
+> - Page sources: `pages/` (M files)
 
 ---
 
@@ -169,11 +216,14 @@ Report to the user:
 ### Browser tab not visible
 The browser doesn't always pop up automatically. Tell the user to look for the Chrome browser tab.
 
+### Screenshot/JS errors ("Cannot access chrome-extension:// URL")
+Create a fresh tab with `tabs_create_mcp` and use that tab ID. Do not reuse the default tab for screenshots or JavaScript execution.
+
 ### Network blocked
 If the BMS IP/domain is blocked, add it under settings → "Additional allowed domains".
 
 ### Tool errors (Click, Execute JavaScript, Take screenshot)
-Always Navigate to a page first and wait for it to load before using other browser tools.
+Always Navigate to a page first and wait for it to load before using other browser tools. If errors persist, create a new tab and retry.
 
 ### BMS content in iframes
 If Read page or Execute JavaScript returns limited content, check for iframes and navigate directly to the iframe URL.
