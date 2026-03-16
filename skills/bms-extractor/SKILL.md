@@ -157,11 +157,11 @@ After extracting equipment from a few sample levels, determine zone names using 
 
 #### Step B1: Sample BMS zone descriptions
 
-Visit the **overview/detail page** for 3–5 VAVs across different levels and extract the zone description field. Many BMS platforms store a descriptive zone name on each equipment point (e.g. in Niagara, it's typically line 2 below the equipment name).
+Visit the **overview/detail page** for 3–5 VAVs across different levels and extract the zone description field. Many BMS platforms store a descriptive zone name or area label on each equipment point (often visible as a subtitle or description field below the equipment name on its detail/overview page).
 
-Use Execute JavaScript with a TreeWalker to extract text near equipment labels:
+Use Execute JavaScript to extract all text content from the page and look for description fields:
 ```javascript
-// Walk text nodes to find zone descriptions near VAV labels
+// Extract all visible text from the page to find zone descriptions
 const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
 const results = [];
 while (walker.nextNode()) {
