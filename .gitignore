@@ -1,0 +1,13 @@
+# Extraction output (site-specific, not committed)
+bms-extract/
+
+# Node.js (temporary playwright install during extraction)
+node_modules/
+package.json
+package-lock.json
+
+# Temporary scripts
+*.cjs
+
+# Playwright test artifacts
+test-results/
