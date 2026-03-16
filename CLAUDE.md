@@ -13,9 +13,12 @@ The primary use case is commissioning new sites in the Peak platform — extract
 ```
 skills/bms-extractor/
 ├── SKILL.md              # Skill definition
-└── references/           # Reference data (main branch only)
+└── references/           # Reference data (bundled into .skill zip)
     ├── bms-ui-patterns.md    # Platform-specific BMS UI patterns
     └── equipment-types.md    # Master list of 77 equipment types for Peak
+
+examples/
+└── final_output.xlsx     # Golden example of expected xlsx output format (not bundled into .skill)
 ```
 
 ## How to Use
@@ -55,7 +58,7 @@ bms-extract/<site-name>/
 To build the uploadable `.skill` file for CoWork:
 
 ```bash
-cd skills/bms-extractor && zip -r ../../bms-extractor.skill SKILL.md references/ -x "references/final_output.xlsx" && cd -
+cd skills/bms-extractor && zip -r ../../bms-extractor.skill SKILL.md references/ && cd -
 ```
 
 This creates `bms-extractor.skill` in the repo root. Upload it via CoWork → Customize → Skills → **+** button.
