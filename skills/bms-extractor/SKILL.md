@@ -14,9 +14,10 @@ Extracts **levels and zones** from a BMS web interface using built-in browser to
 ```
 1. SETUP      → Collect BMS URL + site name, create output directory
 2. AUTH       → Navigate to BMS, check if already logged in, handle login if needed
-3. DISCOVER   → Identify nav tree pattern, screenshot the full nav tree
-4. EXTRACT    → Walk levels and zones in the nav hierarchy, screenshot each
-5. OUTPUT     → Write site_model.json, levels_and_zones.tsv, manifest.json
+3. SCOPE      → Show user what's available, ask what to extract
+4. DISCOVER   → Identify nav tree pattern for selected scope
+5. EXTRACT    → Walk levels and zones in the nav hierarchy, screenshot each
+6. OUTPUT     → Write site_model.json, levels_and_zones.tsv, manifest.json
 ```
 
 ---
@@ -87,7 +88,24 @@ Wait for the user to confirm, then take another screenshot to verify.
 
 ---
 
-## Step 3: DISCOVER — Identify Navigation Structure
+## Step 3: SCOPE — Confirm Extraction Scope
+
+After authentication, **do not start extracting immediately**. First discover the navigation structure, then present what's available and ask the user what they want:
+
+1. Take a screenshot of the dashboard/nav tree
+2. Identify the levels available (e.g. "I can see Roof, Levels 15–1, Ground, and B1 — 18 levels total")
+3. Ask the user:
+
+> "What would you like to extract?"
+> - **All levels and zones** — full building hierarchy
+> - **Specific levels only** — e.g. "just Levels 1–5" or "only Ground and B1"
+> - **A single level** — e.g. "Level 3 only, with all its zones"
+
+Wait for the user to confirm the scope before proceeding to Step 4.
+
+---
+
+## Step 4: DISCOVER — Identify Navigation Structure (for selected scope)
 
 Use Navigate, Take screenshot, Read page, Click, and Execute JavaScript to explore the BMS interface:
 
@@ -109,7 +127,7 @@ Use Navigate, Take screenshot, Read page, Click, and Execute JavaScript to explo
 
 ---
 
-## Step 4: EXTRACT — Walk Levels and Zones
+## Step 5: EXTRACT — Walk Levels and Zones
 
 For each level found:
 1. **Navigate** to the level page URL
@@ -176,7 +194,7 @@ After each level, report progress:
 
 ---
 
-## Step 5: OUTPUT — Write Files
+## Step 6: OUTPUT — Write Files
 
 ### 5a. `site_model.json`
 
