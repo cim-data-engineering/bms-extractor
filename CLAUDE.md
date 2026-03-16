@@ -63,7 +63,15 @@ This creates `bms-extractor.skill` in the repo root. Upload it via CoWork → Cu
 
 ## CoWork Deployment
 
-Upload `bms-extractor.skill` via CoWork Skills UI (Customize → Skills → +).
+To install/update the skill in CoWork:
+
+1. In the conversation window, click the **+** button
+2. Click **Connectors** then **Manage Connectors**
+3. Select **Skills** on the right-hand side
+4. To install: click **+** → **Upload skill** → select the `.skill` file
+5. To update: click the existing skill → **⋯** (ellipsis) → **Replace** → select the new `.skill` file
+
+**Note:** When replacing, the `.skill` file sometimes appears greyed out on the first attempt. Close and retry — it usually works the second time.
 
 ## Prerequisites
 
