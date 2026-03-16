@@ -11,11 +11,7 @@
     {
       "name": "bms-extractor",
       "description": "BMS level and zone extraction skill using Playwright",
-      "source": "./",
-      "strict": false,
-      "skills": [
-        "./skills/bms-extractor/SKILL.md"
-      ]
+      "source": "./"
     }
   ]
 }
