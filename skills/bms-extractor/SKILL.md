@@ -1,27 +1,30 @@
 ---
 name: bms-extractor
-description: Extracts levels and zones from a BMS (Building Management System) web interface using Playwright. Produces a TSV file for Peak platform import and a JSON site model with screenshots for verification. Handles authentication via Playwright browser state persistence. Works in CoWork without the --chrome flag. Triggers for "extract levels from BMS", "get zones from BMS", "map BMS levels and zones", "BMS site structure extraction", or "extract BMS hierarchy for Peak import".
+description: Extracts levels and zones from a BMS (Building Management System) web interface. Produces a TSV file for Peak platform import and a JSON site model with screenshots for verification. Works in both CoWork (using built-in browser tools) and CLI (using Playwright). Triggers for "extract levels from BMS", "get zones from BMS", "map BMS levels and zones", "BMS site structure extraction", or "extract BMS hierarchy for Peak import".
 ---
 
 # BMS Extractor
 
-Extracts **levels and zones** from a BMS web interface using Playwright, producing a TSV ready for Peak platform import and a JSON site model with screenshot evidence.
+Extracts **levels and zones** from a BMS web interface, producing a TSV ready for Peak platform import and a JSON site model with screenshot evidence.
 
 Unlike `bms-web-extractor` (which requires `--chrome` and extracts full point data), this skill focuses on the spatial hierarchy only — the first step in onboarding a new site.
 
-## Prerequisites
+## Environment Detection
 
-- Playwright installed: `npx playwright install chromium`
-- BMS URL accessible (VPN connected if required)
-- Site name and BMS login credentials ready
+This skill works in two environments with different browser tooling:
+
+- **CoWork (web):** Use the built-in browser tools (Navigate, Click, Take screenshot, Read page, Execute JavaScript). This is the default when running in CoWork — Playwright cannot be used because the sandbox VM has no display and network restrictions may block BMS IPs.
+- **CLI (local):** Use Playwright for headless browser automation. Requires `npx playwright install chromium`.
+
+**How to detect:** If built-in browser tools (Navigate, Take screenshot, etc.) are available, use them. If not, fall back to Playwright CLI commands.
 
 ---
 
 ## Workflow Overview
 
 ```
-1. SETUP      → Collect BMS URL + site name, launch Playwright, check for saved session
-2. AUTH       → Navigate to BMS, handle login (form-fill or manual), save session state
+1. SETUP      → Collect BMS URL + site name, create output directory
+2. AUTH       → Navigate to BMS, check if already logged in, handle login if needed
 3. DISCOVER   → Identify nav tree pattern, screenshot the full nav tree
 4. EXTRACT    → Walk levels and zones in the nav hierarchy, screenshot each
 5. OUTPUT     → Write site_model.json, levels_and_zones.tsv, manifest.json
@@ -44,46 +47,43 @@ Ask the user for:
 1. **BMS URL** — the web interface URL (e.g. `https://bms.example.com`)
 2. **Site name** — human-readable name (e.g. "99 Elizabeth St")
 
-Check for saved Playwright session state:
-
-```bash
-# Check for existing session
-SESSION_FILE="${OUTPUT_DIR}/playwright-state.json"
-if [ -f "$SESSION_FILE" ]; then
-  echo "Found saved session — will attempt to reuse"
-fi
-```
-
 ---
 
 ## Step 2: AUTH — Authentication
 
-**CRITICAL: Never ask the user to type credentials into the chat.** Credentials typed in chat are visible in the conversation history. Instead, open a headed browser for the user to log in directly.
+**CRITICAL: Never ask the user to type credentials into the chat.** Credentials typed in chat are visible in the conversation history.
 
-### First run (no saved session)
+### Check authentication status first
 
-Check whether a saved session exists:
+**Do not assume the user needs to log in.** The browser may already have an active session (e.g. from a previous conversation or persistent cookies). Always check first:
 
-```bash
-SESSION_FILE="${OUTPUT_DIR}/playwright-state.json"
-if [ -f "$SESSION_FILE" ]; then
-  echo "Found saved session — skipping login"
-fi
-```
+1. **Navigate** to the BMS URL
+2. **Take a screenshot** of the page
+3. **Read the screenshot** — if it shows the BMS dashboard/home page, the user is already authenticated → skip to Step 3
+4. Only if it shows a login page, proceed with the login flow below
 
-If no session exists, open a headed browser for the user to log in manually. Tell the user what's about to happen, then run the command:
+### CoWork: Login via built-in browser
+
+If login is needed, tell the user:
+
+> "The BMS login page is showing. Please log in using the Chrome browser — you can find it in your CoWork browser tabs. Let me know once you're on the dashboard."
+
+Then wait for the user to confirm they've logged in. Take another screenshot to verify.
+
+**Note:** In CoWork, the browser tab doesn't pop up automatically — the user needs to find the Chrome tab themselves.
+
+### CLI: Login via Playwright
+
+If no saved session exists:
 
 > "I'm opening a browser window to the BMS. Please log in, then **close the browser window** when you're done — your session will be saved automatically."
 
 ```bash
+SESSION_FILE="${OUTPUT_DIR}/playwright-state.json"
 npx playwright open --save-storage="${SESSION_FILE}" "${BMS_URL}"
 ```
 
-This command blocks until the user closes the browser window, then returns.
-
-### Verify the session
-
-After the user confirms, take a headless screenshot using the saved session to verify it worked:
+Verify with a headless screenshot:
 
 ```bash
 npx playwright screenshot \
@@ -92,15 +92,7 @@ npx playwright screenshot \
   "${OUTPUT_DIR}/screenshots/post-login.png"
 ```
 
-Read the screenshot. If it shows the login page again, the session wasn't saved — ask the user to retry. If it shows the BMS dashboard, proceed to Step 3.
-
-### Subsequent runs
-
-If a session file already exists, go straight to the verification screenshot. If the session has expired (screenshot shows login page), delete the state file and repeat the manual login flow:
-
-```bash
-rm "${SESSION_FILE}"
-```
+If a session file already exists, take the verification screenshot first. Only prompt for login if the screenshot shows a login page.
 
 **CRITICAL: Never write credentials to output files (site_model.json, manifest.json, TSV).**
 
@@ -108,9 +100,22 @@ rm "${SESSION_FILE}"
 
 ## Step 3: DISCOVER — Identify Navigation Structure
 
-The `npx playwright screenshot` CLI is useful for simple page captures, but BMS interfaces typically require **clicking nav elements, reading DOM text, and walking iframe-based hierarchies**. For this, you need programmatic Playwright scripts.
+### CoWork: Using built-in browser tools
 
-### Setting up programmatic Playwright
+Use the Navigate, Take screenshot, Read page, Click, and Execute JavaScript tools to explore the BMS interface:
+
+1. **Take a screenshot** of the dashboard to identify the BMS platform and nav pattern
+2. **Read the page** to get link text, button labels, and navigation structure
+3. **Execute JavaScript** to extract DOM elements, especially from iframes:
+   ```javascript
+   // Get all clickable elements
+   document.querySelectorAll('a, input[type="button"], [onclick]')
+   ```
+4. **Click** navigation elements to explore the hierarchy
+
+**Iframe handling in CoWork:** Many BMS platforms load content in iframes. If the main page shows navigation buttons but Read page/Execute JavaScript returns limited content, try navigating directly to iframe URLs. For Allerton/Optergy, replace `page?d=` with `page?dds=` in the URL.
+
+### CLI: Using Playwright scripts
 
 Write Node.js scripts to the **output directory** (not the repo root) to avoid polluting the project:
 
@@ -124,8 +129,6 @@ cd -  # return to original directory
 ```
 
 **IMPORTANT:** All temporary scripts, `package.json`, and `node_modules` must go in the output directory (`bms-extract/<site>/`), not the repo root. Clean up scripts after extraction is complete.
-
-### Discovery script pattern
 
 Write a `.cjs` script to the output directory and run it from there so `require('playwright')` resolves:
 
@@ -176,7 +179,7 @@ cd "${OUTPUT_DIR}" && node discover.cjs 2>&1 && cd -
 
 ### What to identify
 
-Read the screenshot and script output to determine:
+Read the screenshot and output to determine:
 - **BMS platform** (Niagara N4, Siemens Desigo, Schneider EBO, Metasys, Honeywell EBI, Allerton/Optergy, or unknown)
 - **Nav pattern** — sidebar tree, top tabs, button grid, or breadcrumb-based
 - **Iframe usage** — many BMS platforms render content in iframes; you may need to navigate to the iframe URL directly (e.g. `page?dds=...` for Allerton/Optergy)
@@ -232,57 +235,17 @@ Read the screenshot and script output to determine:
 
 Systematically navigate the hierarchy, extracting level and zone names with a screenshot at each step.
 
-### Scripted extraction
+### CoWork: Using built-in browser tools
 
-For BMS interfaces that require clicking/DOM reading, write extraction scripts following this pattern:
+For each level found:
+1. **Navigate** to the level page URL
+2. **Take a screenshot** and save it to the output directory
+3. **Read the page** or **Execute JavaScript** to extract zone names
+4. **Click** sub-navigation to explore zones if needed
 
-```javascript
-// ${OUTPUT_DIR}/extract.cjs
-const { chromium } = require('playwright');
+### CLI: Using Playwright
 
-(async () => {
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({
-    storageState: 'playwright-state.json',
-    viewport: { width: 1920, height: 1080 }
-  });
-  const page = await context.newPage();
-
-  const levels = [
-    // Populate from discovery step
-    { name: 'Level 1', url: 'http://bms.example.com/page?dds=...' },
-    // ...
-  ];
-
-  for (const level of levels) {
-    await page.goto(level.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
-    await page.waitForTimeout(3000);
-
-    const slug = level.name.toLowerCase().replace(/\s+/g, '-');
-    await page.screenshot({ path: `screenshots/level-${slug}.png`, fullPage: true });
-    console.log(`Screenshot: ${level.name}`);
-
-    // Extract zone names from the page DOM (platform-specific)
-    // Check all frames if the BMS uses iframes
-    for (const frame of page.frames()) {
-      try {
-        const zones = await frame.evaluate(() => {
-          // Adapt selectors to the specific BMS platform
-          const els = document.querySelectorAll('.zone-name, td.zone, [data-zone]');
-          return Array.from(els).map(el => el.textContent.trim()).filter(Boolean);
-        });
-        if (zones.length) console.log(`  Zones: ${zones.join(', ')}`);
-      } catch(e) {}
-    }
-  }
-
-  await browser.close();
-})().catch(e => console.error('FATAL:', e));
-```
-
-### For simple URL-navigable levels
-
-If each level has a direct URL (no clicking needed), `npx playwright screenshot` CLI works:
+For BMS interfaces that require clicking/DOM reading, write extraction scripts. For simple URL-navigable levels, `npx playwright screenshot` CLI works:
 
 ```bash
 LEVEL_SLUG=$(echo "${LEVEL_NAME}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
@@ -316,13 +279,6 @@ Maintain a running JSON structure:
       "zones": [
         { "name": "Zone A", "screenshot": "screenshots/level-1-zone-a.png" },
         { "name": "Zone B", "screenshot": "screenshots/level-1-zone-b.png" }
-      ]
-    },
-    {
-      "name": "Level 2",
-      "screenshot": "screenshots/level-2.png",
-      "zones": [
-        { "name": "North Wing", "screenshot": "screenshots/level-2-north-wing.png" }
       ]
     }
   ]
@@ -367,7 +323,7 @@ Level 3	Lobby, North Wing, South Wing, Plant Room
 
 Write extraction metadata (source URL, site name, platform, timestamps, counts).
 
-### 5d. Clean up temporary scripts
+### 5d. Clean up temporary scripts (CLI only)
 
 Remove the helper scripts and npm artifacts from the output directory:
 
@@ -399,18 +355,28 @@ hierarchy and quirks like iframes and lazy-loaded trees.
 
 ## Troubleshooting
 
-### Playwright not installed
+### CoWork: Browser tab not visible
+In CoWork, the browser doesn't pop up automatically. Tell the user to look for the Chrome browser tab in their CoWork interface.
+
+### CoWork: Network blocked
+If the BMS IP/domain is blocked by the sandbox network allowlist, the user needs to add it under CoWork settings → "Additional allowed domains". If that doesn't work, use Claude in Chrome (the browser tools) which routes through the user's browser session.
+
+### CoWork: Tool errors (Click, Execute JavaScript, Take screenshot)
+These built-in browser tools may fail if the browser hasn't navigated to a page yet, or if the page hasn't loaded. Always Navigate first, wait for the page to load, then use other tools.
+
+### Playwright not installed (CLI)
 ```bash
 npx playwright install chromium
 ```
 
 ### Session expired
-Delete the saved state and re-authenticate:
+For CLI, delete the saved state and re-authenticate:
 ```bash
 rm "${OUTPUT_DIR}/playwright-state.json"
 ```
+For CoWork, navigate to the BMS URL — the browser may prompt for login again.
 
-### `networkidle` timeout
+### `networkidle` timeout (CLI)
 BMS pages with live data polling (temperatures, alarms) often never reach `networkidle`. Use `domcontentloaded` and add an explicit wait:
 ```javascript
 await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -418,16 +384,9 @@ await page.waitForTimeout(5000);  // allow async rendering
 ```
 
 ### BMS content in iframes
-Many BMS platforms (Allerton/Optergy, some Niagara setups) load page content in iframes. If `page.evaluate()` returns nothing useful:
-1. List all frames: `page.frames().forEach(f => console.log(f.url()))`
-2. Look for the content frame (e.g. `page?d=...`)
-3. Either evaluate within that frame, or navigate directly to the iframe URL (e.g. replace `page?d=` with `page?dds=`)
-
-### Nav tree not loading (SPA)
-Some BMS platforms load the nav tree asynchronously. Use explicit waits:
-```javascript
-await page.waitForSelector('.nav-tree', { timeout: 10000 });
-```
+Many BMS platforms (Allerton/Optergy, some Niagara setups) load page content in iframes. If Read page or Execute JavaScript returns limited content:
+1. Check for iframes in the page source
+2. Navigate directly to the iframe URL (e.g. replace `page?d=` with `page?dds=` for Allerton/Optergy)
 
 ### Can't identify levels vs zones
 Ask the user to clarify the hierarchy. Take a screenshot of the nav tree and ask:
