@@ -1,3 +1,9 @@
+# macOS
+.DS_Store
+
+# Skill zip artifacts
+*.skill
+
 # Extraction output (site-specific, not committed)
 bms-extract/
 
