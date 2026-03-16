@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Project Overview
 
-BMS Extractor is a Claude Code skill for extracting building hierarchy data (levels and zones) from BMS (Building Management System) web interfaces. It uses Playwright for browser automation, making it compatible with both Claude Code CLI and CoWork (no `--chrome` flag required).
+BMS Extractor is a Claude Code skill for extracting building hierarchy data (levels and zones) from BMS (Building Management System) web interfaces. It uses built-in browser tools (Navigate, Click, Take screenshot, Read page, Execute JavaScript) for browser automation.
 
 The primary use case is commissioning new sites in the Peak platform — extracting the spatial hierarchy from the BMS as the first onboarding step.
 
@@ -24,10 +24,11 @@ Run Claude Code and invoke the skill naturally:
 - "Map the BMS hierarchy for 99 Elizabeth St"
 
 The skill will:
-1. Launch a browser for the user to authenticate
-2. Screenshot and navigate the BMS nav tree
-3. Extract levels and zones
-4. Output `site_model.json`, `levels_and_zones.tsv`, and `manifest.json`
+1. Navigate to the BMS and check if already authenticated
+2. If login needed, prompt the user to log in via the Chrome browser tab
+3. Screenshot and navigate the BMS nav tree
+4. Extract levels and zones
+5. Output `site_model.json`, `levels_and_zones.tsv`, and `manifest.json`
 
 ## Output
 
@@ -36,7 +37,6 @@ bms-extract/<site-name>/
 ├── site_model.json           # Structured hierarchy (JSON)
 ├── levels_and_zones.tsv      # Level + zones table for Peak import
 ├── manifest.json             # Extraction metadata
-├── playwright-state.json     # Saved browser session (reusable)
 └── screenshots/              # Evidence screenshots per level/zone
 ```
 
@@ -50,14 +50,8 @@ bms-extract/<site-name>/
 
 ## CoWork Deployment
 
-This repo is structured as a Claude Code plugin. To install in CoWork or another Claude Code environment:
-
-```
-/plugin marketplace add <path-or-url>
-/plugin install bms-extractor@bms-extractor --scope project
-```
+Upload `bms-extractor.skill` (zip of `skills/bms-extractor/`) via CoWork Skills UI.
 
 ## Prerequisites
 
-- Playwright: `npx playwright install chromium`
 - BMS URL accessible (VPN if required)
