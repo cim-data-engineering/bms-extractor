@@ -34,7 +34,7 @@ Ask the user for:
 1. **BMS URL** — the web interface URL
 2. **Site name** — human-readable name (e.g. "99 Elizabeth St")
 
-Create the output directory: `<site-name-kebab>/`
+Create the output directory: `bms-extract/<site-name-kebab>/`
 
 ---
 
@@ -164,7 +164,7 @@ Write extraction metadata (source URL, site name, platform, timestamps, counts).
 Report to the user:
 > **Extraction complete for [Site Name]**
 > - Levels: N | Zones: Z | Equipment: M
-> - Output: `<site-name>/`
+> - Output: `bms-extract/<site-name>/`
 > - Files: `{site_name}_assetregister.xlsx`, `{site_name}_sitemodel.json`, `{site_name}_manifest.json`, page source HTMLs
 
 ---
