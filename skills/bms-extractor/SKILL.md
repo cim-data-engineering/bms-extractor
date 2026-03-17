@@ -1,6 +1,6 @@
 ---
 name: bms-extractor
-description: Extracts building hierarchy (levels, zones, equipment) from BMS web interfaces. Produces an Excel workbook (.xlsx) for Peak platform import with page source evidence. Triggers for "extract from BMS", "map BMS hierarchy", "BMS site structure", or "extract BMS for Peak".
+description: Extracts building hierarchy (levels, zones, equipment) from BMS web interfaces. Produces an Excel workbook (.xlsx) for Peak platform import .Triggers for "extract from BMS", "map BMS hierarchy", "BMS site structure", or "extract BMS for Peak".
 ---
 
 ## Workflow Overview
@@ -98,8 +98,7 @@ Navigate to user-provided URLs. Read pages and use Execute JavaScript to extract
 For each level:
 1. Navigate to the level's floor plan / graphics page
 2. Read page + Execute JavaScript (`document.documentElement.outerHTML`) to extract equipment names
-3. Save page source to `level-<slug>.html`
-4. Record `source_url` — the page URL where equipment was found
+3. Record `source_url` — the page URL where equipment was found
 5. Extract equipment names — look for all equipment labels on the graphic
 6. **Derive zone IDs** — strip the equipment type prefix:
    - `VAV_P1` → zone `P1`, `FCU_G_1` → zone `G_1`, `PAU_11_1` → zone `11_1`
@@ -124,8 +123,6 @@ Browse summary/plant/overview pages to find ALL equipment:
    - **`equipment_type_select`** — classify using `references/equipment-types.md`
    - **`source_url`** — the page URL where found
 4. Floor-plan equipment from Part A also gets rows here
-
-**Note on screenshots:** In CoWork, browser screenshots cannot be saved to the filesystem (Chrome extension is sandboxed). Rely on saved page source (HTML) as the persistent artifact.
 
 ### Build the structure as you go
 
@@ -165,7 +162,7 @@ Report to the user:
 > **Extraction complete for [Site Name]**
 > - Levels: N | Zones: Z | Equipment: M
 > - Output: `bms-extract/<site-name>/`
-> - Files: `{site_name}_assetregister.xlsx`, `{site_name}_sitemodel.json`, `{site_name}_manifest.json`, page source HTMLs
+> - Files: `{site_name}_assetregister.xlsx`, `{site_name}_sitemodel.json`, `{site_name}_manifest.json`
 
 ---
 

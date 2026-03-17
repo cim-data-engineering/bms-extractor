@@ -42,8 +42,7 @@ The skill will:
 bms-extract/<site-name>/
 ├── {site_name}_assetregister.xlsx  # Excel workbook with 3 tabs (levels_and_zones, equipment_list, equipment_types)
 ├── {site_name}_sitemodel.json      # Structured hierarchy with equipment + zones (JSON)
-├── {site_name}_manifest.json       # Extraction metadata
-└── level-<slug>.html ...           # Saved page source (HTML) per level/page
+└── {site_name}_manifest.json       # Extraction metadata
 ```
 
 ## Building Hierarchy Model
