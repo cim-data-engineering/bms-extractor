@@ -111,3 +111,4 @@ Master list of 77 equipment types for the Peak platform. Use this to classify eq
 | UFH | Under-Floor Heating System |
 | UPS | Uninterruptible Power Supply |
 | GEN | Generator |
+| PAC | Packaged Air Conditioning Units |

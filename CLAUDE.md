@@ -15,7 +15,9 @@ skills/bms-extractor/
 ├── SKILL.md              # Skill definition
 └── references/           # Reference data (bundled into .skill zip)
     ├── bms-ui-patterns.md    # Platform-specific BMS UI patterns
-    └── equipment-types.md    # Master list of 77 equipment types for Peak
+    ├── equipment-types.md    # Master list of 77 equipment types for Peak
+    ├── output-format.md      # JSON schema + xlsx tab column specs
+    └── write_xlsx.py         # Executable: site_model.json → .xlsx workbook
 
 examples/
 └── final_output.xlsx     # Golden example of expected xlsx output format (not bundled into .skill)
@@ -37,11 +39,11 @@ The skill will:
 ## Output
 
 ```
-bms-extract/<site-name>/
-├── {site_name}.xlsx          # Excel workbook with 3 tabs (levels_and_zones, equipment_list, equipment_types)
-├── site_model.json           # Structured hierarchy with equipment + zones (JSON)
-├── manifest.json             # Extraction metadata
-└── pages/                    # Saved page source (HTML) per level/page
+<site-name>/
+├── {site_name}_assetregister.xlsx  # Excel workbook with 3 tabs (levels_and_zones, equipment_list, equipment_types)
+├── {site_name}_sitemodel.json      # Structured hierarchy with equipment + zones (JSON)
+├── {site_name}_manifest.json       # Extraction metadata
+└── level-<slug>.html ...           # Saved page source (HTML) per level/page
 ```
 
 ## Building Hierarchy Model
