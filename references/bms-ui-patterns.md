@@ -2,6 +2,8 @@
 
 Guidance for handling common BMS web interface layouts during extraction.
 
+> **Safety: Read-only.** All BMS interactions must be read-only. Avoid clicking write, override, command, or acknowledge buttons — these are common in BMS UIs and can modify real equipment. Only use navigation and tree-expansion clicks.
+
 ---
 
 ## Niagara N4 (Tridium / Fox)
@@ -14,7 +16,7 @@ Guidance for handling common BMS web interface layouts during extraction.
 
 **Tips:**
 - Tree can be very deep — expand cautiously. `ord` routing in URLs tracks position.
-- "Px views" are custom — every site looks different
+- "Px views" are custom — every site looks different.
 
 ---
 
@@ -71,7 +73,7 @@ Guidance for handling common BMS web interface layouts during extraction.
 
 ---
 
-## Allerton / Optergy (BACtalk)
+## Alerton / Optergy (BACtalk)
 
 **Login:** Form-based at root URL. Username + password fields.
 
@@ -81,7 +83,7 @@ Guidance for handling common BMS web interface layouts during extraction.
 
 **Tips:**
 - Content is absolutely positioned — use bounding box coordinates to map text to rows
-- `networkidle` never fires due to live data polling — use `domcontentloaded` + explicit waits
+- Page may never finish loading due to live data polling — wait a few seconds after navigation before reading
 - Display IDs follow a pattern: `00005001` = Level 1, `00005002` = Level 2, etc.
 - Zone summary tables render level labels as images/positioned elements — crop and read screenshots for best results
 
