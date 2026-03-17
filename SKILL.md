@@ -3,6 +3,27 @@ name: bms-extractor
 description: Extracts building hierarchy (levels, zones, equipment) from BMS web interfaces. Produces an Excel workbook (.xlsx) for Peak platform import .Triggers for "extract from BMS", "map BMS hierarchy", "BMS site structure", or "extract BMS for Peak".
 ---
 
+## Safety: Read-Only Operations
+
+**CRITICAL: This skill is strictly READ-ONLY. BMS systems control real HVAC equipment in occupied buildings — accidental writes can affect occupant comfort, energy usage, or equipment safety.**
+
+### Prohibited actions
+- Clicking "Write", "Override", "Set", "Apply", "Command", or "Acknowledge" buttons
+- Changing setpoints, schedules, modes, or any equipment parameters
+- Submitting forms that modify BMS state
+- Acknowledging or dismissing alarms
+- Executing JavaScript that mutates state (e.g., POST requests, form submissions, element value changes)
+
+### Allowed actions
+- **Navigate** to pages and URLs
+- **Click** to expand/collapse tree nodes and navigate between views
+- **Read page** to extract displayed content
+- **Execute JavaScript** for DOM reading only (e.g., `document.querySelectorAll`, `outerHTML`, `textContent`)
+
+If a page shows editable controls (sliders, input fields, dropdowns), extract the displayed values but **never modify them**.
+
+---
+
 ## Workflow Overview
 
 ```
@@ -92,6 +113,8 @@ Navigate to user-provided URLs. Read pages and use Execute JavaScript to extract
 ---
 
 ## Step 5: EXTRACT — Two-Pass Extraction
+
+**Remember: read and extract only. Do not click controls that modify setpoints, schedules, or equipment state.**
 
 ### Part A: Floor Plan Extraction (builds levels_and_zones)
 

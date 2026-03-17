@@ -2,6 +2,8 @@
 
 Guidance for handling common BMS web interface layouts during extraction.
 
+> **Safety: Read-only.** All BMS interactions must be read-only. Avoid clicking write, override, command, or acknowledge buttons — these are common in BMS UIs and can modify real equipment. Only use navigation and tree-expansion clicks.
+
 ---
 
 ## Niagara N4 (Tridium / Fox)
