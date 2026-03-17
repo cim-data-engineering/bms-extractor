@@ -166,7 +166,7 @@ Write `{site_name}_sitemodel.json` first, then generate the workbook:
 
 ```bash
 pip install openpyxl -q
-python references/write_xlsx.py <output_dir>
+python scripts/write_xlsx.py <output_dir>
 ```
 
 The workbook has 3 tabs: `levels_and_zones`, `equipment_list`, `equipment_types`. See `references/output-format.md` for column specs and examples.

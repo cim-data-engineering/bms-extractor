@@ -15,8 +15,9 @@ SKILL.md                  # Skill definition (must be at repo root)
 references/               # Reference data (bundled into .skill zip)
 ├── bms-ui-patterns.md    # Platform-specific BMS UI patterns
 ├── equipment-types.md    # Master list of 77 equipment types for Peak
-├── output-format.md      # JSON schema + xlsx tab column specs
-└── write_xlsx.py         # Executable: site_model.json → .xlsx workbook
+└── output-format.md      # JSON schema + xlsx tab column specs
+scripts/                  # Executable scripts (bundled into .skill zip)
+└── write_xlsx.py         # site_model.json → .xlsx workbook
 
 examples/
 └── final_output.xlsx     # Golden example of expected xlsx output format (not bundled into .skill)
@@ -58,7 +59,7 @@ bms-extract/<site-name>/
 To build the uploadable `.skill` file for CoWork:
 
 ```bash
-zip -r bms-extractor.skill SKILL.md references/
+zip -r bms-extractor.skill SKILL.md references/ scripts/
 ```
 
 This creates `bms-extractor.skill` in the repo root. Upload it via CoWork → Customize → Skills → **+** button.
