@@ -11,13 +11,12 @@ The primary use case is commissioning new sites in the Peak platform — extract
 ## Skill Architecture
 
 ```
-skills/bms-extractor/
-├── SKILL.md              # Skill definition
-└── references/           # Reference data (bundled into .skill zip)
-    ├── bms-ui-patterns.md    # Platform-specific BMS UI patterns
-    ├── equipment-types.md    # Master list of 77 equipment types for Peak
-    ├── output-format.md      # JSON schema + xlsx tab column specs
-    └── write_xlsx.py         # Executable: site_model.json → .xlsx workbook
+SKILL.md                  # Skill definition (must be at repo root)
+references/               # Reference data (bundled into .skill zip)
+├── bms-ui-patterns.md    # Platform-specific BMS UI patterns
+├── equipment-types.md    # Master list of 77 equipment types for Peak
+├── output-format.md      # JSON schema + xlsx tab column specs
+└── write_xlsx.py         # Executable: site_model.json → .xlsx workbook
 
 examples/
 └── final_output.xlsx     # Golden example of expected xlsx output format (not bundled into .skill)
@@ -34,7 +33,7 @@ The skill will:
 2. If login needed, prompt the user to log in via the Chrome browser tab
 3. Ask the user for URL guidance (floor plans, equipment summary pages)
 4. Two-pass extraction: floor plans (levels & zones), then full equipment list
-5. Output `{site_name}.xlsx` (3 tabs), `site_model.json`, and `manifest.json`
+5. Output `{site_name}_assetregister.xlsx` (3 tabs), `{site_name}_sitemodel.json`, and `{site_name}_manifest.json`
 
 ## Output
 
@@ -59,7 +58,7 @@ bms-extract/<site-name>/
 To build the uploadable `.skill` file for CoWork:
 
 ```bash
-cd skills/bms-extractor && zip -r ../../bms-extractor.skill SKILL.md references/ && cd -
+zip -r bms-extractor.skill SKILL.md references/
 ```
 
 This creates `bms-extractor.skill` in the repo root. Upload it via CoWork → Customize → Skills → **+** button.
