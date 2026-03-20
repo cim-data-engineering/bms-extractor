@@ -8,9 +8,9 @@
   },
   "plugins": [
     {
-      "name": "bms-skills",
-      "description": "BMS level and zone extraction skill using Playwright",
-      "source": "./skills"
+      "name": "bms-extractor",
+      "description": "BMS level and zone extraction skill for Peak platform onboarding",
+      "source": "./"
     }
   ]
 }

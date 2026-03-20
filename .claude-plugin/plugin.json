@@ -1,5 +1,6 @@
 {
-  "name": "bms-skils",
+  "name": "bms-extractor",
+  "description": "BMS level and zone extraction skill for Peak platform onboarding",
   "homepage": "https://github.com/cim-data-engineering/bms-extractor",
   "repository": "https://github.com/cim-data-engineering/bms-extractor",
   "skills": "./"
