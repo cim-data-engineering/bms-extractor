@@ -1,17 +1,16 @@
 {
-  "name": "bms-extractor",
+  "name": "cim-bms-skills",
+  "metadata": {
+    "description": "Extract levels and zones from BMS web interfaces for Peak platform onboarding"
+  },
   "owner": {
     "name": "David Waterworth"
   },
-  "metadata": {
-    "description": "Extract levels and zones from BMS web interfaces for Peak platform onboarding",
-    "version": "0.1.0"
-  },
   "plugins": [
     {
-      "name": "bms-extractor",
+      "name": "bms-skills",
       "description": "BMS level and zone extraction skill using Playwright",
-      "source": "./"
+      "source": "./skills"
     }
   ]
 }
