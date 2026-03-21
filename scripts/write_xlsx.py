@@ -67,13 +67,14 @@ def write_xlsx(output_dir: str) -> None:
 
     # Tab 2: equipment_list
     ws2 = wb.create_sheet("equipment_list")
-    ws2.append(["equipment_name", "level_select", "zone_select", "equipment_type_select", "source_url"])
+    ws2.append(["equipment_name", "level_select", "zone_select", "equipment_type_select", "device_id", "source_url"])
     for eq in model.get("equipment_list", []):
         ws2.append([
             eq["equipment_name"],
             eq["level_select"],
             eq["zone_select"],
             eq["equipment_type_select"],
+            eq.get("device_id", ""),
             eq.get("source_url", ""),
         ])
 
@@ -86,7 +87,7 @@ def write_xlsx(output_dir: str) -> None:
         ws3 = wb.create_sheet("points_list")
         ws3.append([
             "equipment_name", "level_select", "zone_select", "equipment_type_select",
-            "graphic_point_name", "graphic_value", "graphic_unit", "underlying_point_name",
+            "device_id", "graphic_point_name", "graphic_value", "graphic_unit", "underlying_point_name",
         ])
         for pt in points:
             eq = eq_lookup.get(pt.get("equipment_name", ""), {})
@@ -95,6 +96,7 @@ def write_xlsx(output_dir: str) -> None:
                 eq.get("level_select", ""),
                 eq.get("zone_select", ""),
                 eq.get("equipment_type_select", ""),
+                eq.get("device_id", ""),
                 pt.get("graphic_point_name", ""),
                 pt.get("graphic_value", ""),
                 pt.get("graphic_unit", ""),

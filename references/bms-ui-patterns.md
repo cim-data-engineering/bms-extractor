@@ -20,6 +20,8 @@ Guidance for handling common BMS web interface layouts during extraction.
 
 **Points extraction:** Elements use `title` attributes with `Name = Value {status}` pattern or `ord`/`data-ord` attributes. Probe for both `[title]` and `[data-ord]` — Niagara 4 sites vary.
 
+**Device ID:** The `ord` path contains the controller name — e.g., `slot:/Building/JACE-01/...` → device_id `JACE-01`.
+
 ---
 
 ## Siemens Desigo CC
@@ -34,6 +36,8 @@ Guidance for handling common BMS web interface layouts during extraction.
 - Right-click context menu on objects reveals "Go to object" for detail page
 
 **Points extraction:** Uses SVG-based schematics — probe `svg [id]` for point bindings. Point IDs often follow `objectId.propertyName` convention.
+
+**Device ID:** Object path includes the controller — e.g., `System1.ManagementView:ManagementView.FieldNetworks.BACnet.NAE-01` → device_id `NAE-01`.
 
 ---
 
@@ -50,6 +54,8 @@ Guidance for handling common BMS web interface layouts during extraction.
 
 **Points extraction:** Probe for `[data-ref]` attributes — Schneider uses these for point bindings. Also check `[aria-label]` as a secondary source.
 
+**Device ID:** Server tree path shows controller name under the network node.
+
 ---
 
 ## Johnson Controls Metasys
@@ -64,6 +70,8 @@ Guidance for handling common BMS web interface layouts during extraction.
 - JSON API available at `/api/v5/objects` — if accessible, prefer API over UI scraping
 
 **Points extraction:** Probe for `[data-bind]` and `[data-point]` attributes. If the JSON API is accessible, point values may also be available at `/api/v5/objects/{id}/points`.
+
+**Device ID:** NAE/NCE controller names are visible in the tree hierarchy and API object paths.
 
 ---
 
@@ -96,6 +104,8 @@ Guidance for handling common BMS web interface layouts during extraction.
 - Zone summary tables render level labels as images/positioned elements — crop and read screenshots for best results
 
 **Points extraction:** Graphics are absolutely positioned HTML — spatial matching (Step 4) is essential. Probe for `[title]` attributes on value elements. Point labels are often positioned text `<div>` elements near the value.
+
+**Device ID:** Display URL may reference the controller — e.g., `ADVCONTR/<controller>/...`.
 
 ---
 

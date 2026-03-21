@@ -146,6 +146,7 @@ Browse summary/plant/overview pages to find ALL equipment:
    - **`level_select`** — assign to a level from Part A, or create new (e.g., "Plantroom", "Roof")
    - **`zone_select`** — assign to a zone from the level's zone list
    - **`equipment_type_select`** — classify using `references/equipment-types.md`
+   - **`device_id`** — controller/device identifier, often found in the page URL or page content (e.g., `NAE-01`, `JACE-8000-1`). Comma-separate if multiple. Best endeavour — skip if not readily available.
    - **`source_url`** — the page URL where found
 4. Floor-plan equipment from Part A also gets rows here
 
