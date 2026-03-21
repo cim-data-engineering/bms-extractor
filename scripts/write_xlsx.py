@@ -77,11 +77,35 @@ def write_xlsx(output_dir: str) -> None:
             eq.get("source_url", ""),
         ])
 
-    # Tab 3: equipment_types
-    ws3 = wb.create_sheet("equipment_types")
-    ws3.append(["equipment_types"])
+    # Tab 3: points_list (optional — only if Part C was run)
+    points = model.get("points_list", [])
+    if points:
+        eq_lookup = {
+            eq["equipment_name"]: eq for eq in model.get("equipment_list", [])
+        }
+        ws3 = wb.create_sheet("points_list")
+        ws3.append([
+            "equipment_name", "level_select", "zone_select", "equipment_type_select",
+            "graphic_point_name", "graphic_value", "graphic_unit", "underlying_point_name",
+        ])
+        for pt in points:
+            eq = eq_lookup.get(pt.get("equipment_name", ""), {})
+            ws3.append([
+                pt.get("equipment_name", ""),
+                eq.get("level_select", ""),
+                eq.get("zone_select", ""),
+                eq.get("equipment_type_select", ""),
+                pt.get("graphic_point_name", ""),
+                pt.get("graphic_value", ""),
+                pt.get("graphic_unit", ""),
+                pt.get("underlying_point_name", ""),
+            ])
+
+    # Tab 4: equipment_types
+    ws4 = wb.create_sheet("equipment_types")
+    ws4.append(["equipment_types"])
     for et in equipment_types:
-        ws3.append([et])
+        ws4.append([et])
 
     out_path = os.path.join(output_dir, f"{site_name}_assetregister.xlsx")
     wb.save(out_path)

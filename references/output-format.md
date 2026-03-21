@@ -2,6 +2,13 @@
 
 Detailed specifications for the JSON site model and Excel workbook output.
 
+### Two-phase output
+
+Output is generated in two phases:
+
+- **Phase 1 (after Part B):** 3-tab xlsx (`levels_and_zones`, `equipment_list`, `equipment_types`), sitemodel.json without `points_list`, manifest.json with `points_extracted: false`. These files are complete and usable immediately.
+- **Phase 2 (after Part C, optional):** 4-tab xlsx (adds `points_list` tab), sitemodel.json updated with `points_list` array, manifest.json updated with `points_extracted: true` and point counts. `write_xlsx.py` overwrites the Phase 1 workbook cleanly — it creates a fresh workbook each run.
+
 ---
 
 ## {site_name}_sitemodel.json Structure
@@ -40,6 +47,22 @@ Detailed specifications for the JSON site model and Excel workbook output.
       "equipment_type_select": "Variable Air Volume",
       "source_url": "https://bms.example.com/floor/ground"
     }
+  ],
+  "points_list": [
+    {
+      "equipment_name": "HR_PZN_AHU",
+      "graphic_point_name": "S/A Duct Pressure",
+      "graphic_value": "23",
+      "graphic_unit": "Pa",
+      "underlying_point_name": "SA_StaticPressure"
+    },
+    {
+      "equipment_name": "HR_PZN_AHU",
+      "graphic_point_name": "SAF Call",
+      "graphic_value": "Off",
+      "graphic_unit": "",
+      "underlying_point_name": "SAF_Call"
+    }
   ]
 }
 ```
@@ -72,7 +95,23 @@ Detailed specifications for the JSON site model and Excel workbook output.
 - `level_select` and `zone_select` must reference values from Tab 1
 - `equipment_type_select` must be from the master equipment types list
 
-### Tab 3 — `equipment_types`
+### Tab 3 — `points_list` (optional — only if Part C was run)
+
+| equipment_name | level_select | zone_select | equipment_type_select | graphic_point_name | graphic_value | graphic_unit | underlying_point_name |
+|---|---|---|---|---|---|---|---|
+| HR_PZN_AHU | Roof | HR-Centre | Air Handling Units | S/A Duct Pressure | 23 | Pa | SA_StaticPressure |
+| HR_PZN_AHU | Roof | HR-Centre | Air Handling Units | SAF Call | Off | | SAF_Call |
+| HR_PZN_AHU | Roof | HR-Centre | Air Handling Units | Out Of Service | No | | *(no DOM binding)* |
+
+- 8 columns: 4 equipment context columns looked up from `equipment_list` + 4 extraction columns from Part C
+- `level_select`, `zone_select`, `equipment_type_select` are joined from `equipment_list` by matching `equipment_name`
+- `graphic_point_name` = human-readable label from the BMS graphic
+- `graphic_value` = displayed value (numeric or state string)
+- `graphic_unit` = unit of measure if shown; blank for state values
+- `underlying_point_name` = DOM-bound point/tag name; `*(no DOM binding)*` if none found
+- JSON `points_list` stores only the 5 raw extraction fields; the 3 equipment context columns are added at xlsx write time
+
+### Tab 4 — `equipment_types`
 
 | equipment_types |
 |----------------|

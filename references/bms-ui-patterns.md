@@ -18,6 +18,8 @@ Guidance for handling common BMS web interface layouts during extraction.
 - Tree can be very deep — expand cautiously. `ord` routing in URLs tracks position.
 - "Px views" are custom — every site looks different.
 
+**Points extraction:** Elements use `title` attributes with `Name = Value {status}` pattern or `ord`/`data-ord` attributes. Probe for both `[title]` and `[data-ord]` — Niagara 4 sites vary.
+
 ---
 
 ## Siemens Desigo CC
@@ -30,6 +32,8 @@ Guidance for handling common BMS web interface layouts during extraction.
 
 **Tips:**
 - Right-click context menu on objects reveals "Go to object" for detail page
+
+**Points extraction:** Uses SVG-based schematics — probe `svg [id]` for point bindings. Point IDs often follow `objectId.propertyName` convention.
 
 ---
 
@@ -44,6 +48,8 @@ Guidance for handling common BMS web interface layouts during extraction.
 **Tips:**
 - List views (not graphics) are most structured — look for "List" or "Table" view toggle
 
+**Points extraction:** Probe for `[data-ref]` attributes — Schneider uses these for point bindings. Also check `[aria-label]` as a secondary source.
+
 ---
 
 ## Johnson Controls Metasys
@@ -56,6 +62,8 @@ Guidance for handling common BMS web interface layouts during extraction.
 
 **Tips:**
 - JSON API available at `/api/v5/objects` — if accessible, prefer API over UI scraping
+
+**Points extraction:** Probe for `[data-bind]` and `[data-point]` attributes. If the JSON API is accessible, point values may also be available at `/api/v5/objects/{id}/points`.
 
 ---
 
@@ -86,6 +94,8 @@ Guidance for handling common BMS web interface layouts during extraction.
 - Page may never finish loading due to live data polling — wait a few seconds after navigation before reading
 - Display IDs follow a pattern: `00005001` = Level 1, `00005002` = Level 2, etc.
 - Zone summary tables render level labels as images/positioned elements — crop and read screenshots for best results
+
+**Points extraction:** Graphics are absolutely positioned HTML — spatial matching (Step 4) is essential. Probe for `[title]` attributes on value elements. Point labels are often positioned text `<div>` elements near the value.
 
 ---
 
