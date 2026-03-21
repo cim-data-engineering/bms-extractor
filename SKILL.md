@@ -32,7 +32,8 @@ If a page shows editable controls (sliders, input fields, dropdowns), extract th
 3. SCOPE      → Ask user for URL guidance (floor plans, equipment pages)
 4. DISCOVER   → Identify nav tree pattern using user-provided URLs
 5. EXTRACT    → Two-pass: floor plans (levels & zones), then full equipment list
-6. OUTPUT     → Run write_xlsx.py, write {site_name}_sitemodel.json, {site_name}_manifest.json
+6. OUTPUT     → Write xlsx (3 tabs), sitemodel.json, manifest.json
+7. POINTS     → (Optional) Extract BMS points, then update output files (4 tabs)
 ```
 
 ### Progress checklist
@@ -45,7 +46,8 @@ Use this to track extraction progress:
 - [ ] DISCOVER — nav pattern identified
 - [ ] EXTRACT Part A — floor plans done, levels & zones captured
 - [ ] EXTRACT Part B — full equipment list complete
-- [ ] OUTPUT — xlsx + JSON files written
+- [ ] OUTPUT — xlsx (3 tabs) + JSON files written
+- [ ] POINTS Part C — (optional) points extracted, output updated (4 tabs)
 
 ---
 
@@ -144,6 +146,7 @@ Browse summary/plant/overview pages to find ALL equipment:
    - **`level_select`** — assign to a level from Part A, or create new (e.g., "Plantroom", "Roof")
    - **`zone_select`** — assign to a zone from the level's zone list
    - **`equipment_type_select`** — classify using `references/equipment-types.md`
+   - **`device_id`** — controller/device identifier, often found in the page URL or page content (e.g., `NAE-01`, `JACE-8000-1`). Comma-separate if multiple. Best endeavour — skip if not readily available.
    - **`source_url`** — the page URL where found
 4. Floor-plan equipment from Part A also gets rows here
 
@@ -160,32 +163,89 @@ After each level/page:
 
 ## Step 6: OUTPUT — Write Files
 
-### 6a. `{site_name}_assetregister.xlsx` — Excel Workbook
+### 6a. `{site_name}_sitemodel.json`
 
-Write `{site_name}_sitemodel.json` first, then generate the workbook:
+Write the JSON structure built during extraction (without `points_list` — that is added in Step 7 if Part C runs).
+
+### 6b. `{site_name}_assetregister.xlsx` — Excel Workbook
+
+Generate the workbook:
 
 ```bash
 pip install openpyxl -q
 python scripts/write_xlsx.py <output_dir>
 ```
 
-The workbook has 3 tabs: `levels_and_zones`, `equipment_list`, `equipment_types`. See `references/output-format.md` for column specs and examples.
-
-### 6b. `{site_name}_sitemodel.json`
-
-Write the complete JSON structure built during extraction.
+This produces a 3-tab workbook (`levels_and_zones`, `equipment_list`, `equipment_types`). See `references/output-format.md` for column specs and examples.
 
 ### 6c. `{site_name}_manifest.json`
 
-Write extraction metadata (source URL, site name, platform, timestamps, counts).
+Write extraction metadata (source URL, site name, platform, timestamps, counts). Set `points_extracted: false`.
 
-### Final summary
+### Extraction summary and Part C prompt
 
-Report to the user:
+Report to the user and offer Part C:
+
 > **Extraction complete for [Site Name]**
 > - Levels: N | Zones: Z | Equipment: M
 > - Output: `bms-extract/<site-name>/`
 > - Files: `{site_name}_assetregister.xlsx`, `{site_name}_sitemodel.json`, `{site_name}_manifest.json`
+>
+> Would you like me to also extract BMS points (sensors, setpoints, actuators) from equipment graphics?
+> - **All** — extract points for every equipment
+> - **Selected** — extract for specific equipment (list them)
+> - **Skip** — done, no points extraction needed
+
+---
+
+## Step 7: POINTS — Optional Part C (BMS Points Extraction)
+
+If the user chose "Skip", stop here — files from Step 6 are the final deliverables.
+
+If the user chose to extract points:
+
+### Part C orchestration
+
+1. **Read `references/points-extraction.md`** for the full extraction technique (includes guidance on navigating to equipment graphics pages)
+2. Build the equipment work list from the **completed `equipment_list`** (all or user-selected subset)
+3. For each equipment:
+   a. **Navigate using `source_url`** from the equipment's row in `equipment_list`:
+      - If the URL loads a **direct equipment graphics page** → proceed to extraction
+      - If the URL loads a **summary/list page** (multiple equipment listed) → find the specific equipment entry and click through to its detail/graphics page
+      - If no drill-down is possible or no graphics page exists → log and skip this equipment
+   b. Follow the 6-step extraction technique from `references/points-extraction.md`
+   c. Append extracted rows to the `points_list` array in the site model
+   d. Report progress: `"Extracted 12 points for VAV_C1 (3/25 equipment done)"`
+4. **Save intermediate results** every 10 equipment — write the current `points_list` to `{site_name}_sitemodel.json`
+
+### After points extraction — update output files
+
+Re-run output generation to incorporate the extracted points:
+
+1. **Update `{site_name}_sitemodel.json`** — now includes the `points_list` array
+2. **Re-run `write_xlsx.py`** — overwrites the 3-tab workbook with a 4-tab version (adds `points_list` tab between `equipment_list` and `equipment_types`)
+   ```bash
+   python scripts/write_xlsx.py <output_dir>
+   ```
+3. **Update `{site_name}_manifest.json`** — set `points_extracted: true`, add point counts
+
+Report to the user:
+> **Points extraction complete for [Site Name]**
+> - Points: P total across E equipment
+> - Updated files: `{site_name}_assetregister.xlsx` (now 4 tabs), `{site_name}_sitemodel.json`
+
+### Error handling
+
+- **Canvas-only graphics** — use screenshot fallback per the extraction technique
+- **Navigation failure** — log the equipment name with error, skip, and continue
+- **Auth timeout** — if a page returns a login screen, pause and ask the user to re-authenticate
+- **Empty graphic** — if a page yields 0 points, note it and move on
+- **Summary page with no drill-down** — log the equipment, skip, and continue
+
+### Progress tracking
+
+Maintain a running count:
+> "Points extraction: 15/25 equipment complete. 187 points extracted so far."
 
 ---
 

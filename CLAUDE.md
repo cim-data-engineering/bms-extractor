@@ -15,7 +15,8 @@ SKILL.md                  # Skill definition (must be at repo root)
 references/               # Reference data (bundled into .skill zip)
 ├── bms-ui-patterns.md    # Platform-specific BMS UI patterns
 ├── equipment-types.md    # Master list of 77 equipment types for Peak
-└── output-format.md      # JSON schema + xlsx tab column specs
+├── output-format.md      # JSON schema + xlsx tab column specs
+└── points-extraction.md  # Part C: BMS points extraction technique
 scripts/                  # Executable scripts (bundled into .skill zip)
 └── write_xlsx.py         # site_model.json → .xlsx workbook
 
@@ -35,14 +36,15 @@ The skill will:
 3. Ask the user for URL guidance (floor plans, equipment summary pages)
 4. Two-pass extraction: floor plans (levels & zones), then full equipment list
 5. Output `{site_name}_assetregister.xlsx` (3 tabs), `{site_name}_sitemodel.json`, and `{site_name}_manifest.json`
+6. (Optional) Part C: extract BMS points from equipment graphics using `source_url` from equipment_list, then update output files (4-tab xlsx)
 
 ## Output
 
 ```
 bms-extract/<site-name>/
-├── {site_name}_assetregister.xlsx  # Excel workbook with 3 tabs (levels_and_zones, equipment_list, equipment_types)
-├── {site_name}_sitemodel.json      # Structured hierarchy with equipment + zones (JSON)
-└── {site_name}_manifest.json       # Extraction metadata
+├── {site_name}_assetregister.xlsx  # Excel workbook: 3 tabs after Part B, updated to 4 tabs if Part C runs
+├── {site_name}_sitemodel.json      # Structured hierarchy (without points_list until Part C runs)
+└── {site_name}_manifest.json       # Extraction metadata (points_extracted: false until Part C)
 ```
 
 ## Building Hierarchy Model
