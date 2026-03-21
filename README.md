@@ -1,6 +1,6 @@
 # BMS Extractor
 
-A Claude Desktop skill that extracts building hierarchy data (levels, zones, and equipment) from BMS (Building Management System) web interfaces. Used for commissioning new sites in the Peak platform.
+A Claude Desktop skill that extracts building hierarchy data (levels, zones, and equipment) from BMS (Building Management System) web interfaces. Optionally extracts BMS points (sensors, setpoints, actuators) from equipment graphics. Used for commissioning new sites in the Peak platform.
 
 ## Installation
 
@@ -39,9 +39,14 @@ The skill produces three files in a `bms-extract/<site-name>/` directory inside 
 
 | File | Description |
 |------|-------------|
-| `{site_name}_assetregister.xlsx` | Excel workbook with 3 tabs: **levels_and_zones**, **equipment_list**, **equipment_types** |
+| `{site_name}_assetregister.xlsx` | Excel workbook — 3 tabs after extraction, updated to 4 tabs if points extraction runs |
 | `{site_name}_sitemodel.json` | Structured building hierarchy with equipment and zones |
 | `{site_name}_manifest.json` | Extraction metadata (timestamps, source URL, counts) |
+
+Output is generated in two phases:
+
+1. **After equipment extraction** — files are written immediately with a 3-tab workbook (`levels_and_zones`, `equipment_list`, `equipment_types`). These are complete and usable right away.
+2. **After points extraction (optional)** — if the user opts in, BMS points are extracted from equipment graphics and the files are updated in-place. The workbook gains a 4th tab (`points_list`).
 
 ### Building hierarchy
 
