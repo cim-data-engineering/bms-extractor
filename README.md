@@ -56,3 +56,23 @@ Site (building)
     └── Zone (space/area)
         └── Equipment (VAV, FCU, AHU, Chiller, etc.)
 ```
+
+## Source and packaging
+
+[SKILL.md](SKILL.md) defines the extraction workflow. Supporting format and hierarchy
+details are in [references/output-format.md](references/output-format.md), with
+BMS UI patterns and equipment types alongside it. [scripts/write_xlsx.py](scripts/write_xlsx.py)
+writes the workbook. `examples/` contains a sample output; `bms-extract/` is ignored.
+
+Build the uploadable skill archive with the skill definition at its top level:
+
+```bash
+zip -r bms-extractor.skill SKILL.md references/ scripts/
+```
+
+## Development layout
+
+Maintained utilities belong in `scripts/`, documentation in `docs/`, and one-off
+experiments in `experiments/<name>/scripts/`. Store generated outputs and caches in
+ignored `experiments/<name>/data/` or `data/` directories. Existing tracked inputs
+and fixtures retain their current locations.

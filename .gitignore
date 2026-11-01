@@ -17,3 +17,5 @@ package-lock.json
 
 # Playwright test artifacts
 test-results/
+/experiments/*/data/
+/data/
